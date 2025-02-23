@@ -3,15 +3,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pin = escapeshellarg($_POST['pin']);
     $action = escapeshellarg($_POST['action']);
     
-    $command = "python3 /home/frac-01/frac/gpio_control.py $pin $action";
+    // Construct the command
+    $command = "sudo /usr/bin/python3 /home/frac-01/frac/gpio_control.py $pin $action 2>&1";
+
+    // Execute the command and capture output
+    $output = shell_exec($command);
     
-    if ($pin == "doorcontact" && $action == "check") {
-        $output = shell_exec($command);
-        echo "<script>alert('$output');</script>";
-    } else {
-        shell_exec($command . " > /dev/null 2>&1 &");
-        echo "<script>alert('$pin set to $action');</script>";
-    }
+    echo "<pre>Command: $command\nOutput:\n$output</pre>";
 }
 ?>
 
@@ -24,16 +22,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 </head>
 <body>
     <h2>GPIO Control Panel</h2>
+
     <form method="post">
         <button type="submit" name="pin" value="alarm">Activate Alarm</button>
         <input type="hidden" name="action" value="on">
     </form>
+
     <form method="post">
         <button type="submit" name="pin" value="strike">Activate Strike</button>
         <input type="hidden" name="action" value="on">
     </form>
+
     <form method="post">
         <button type="submit" name="pin" value="doorcontact">Check Door Contact</button>
+        <input type="hidden" name="action" value="check">
+    </form>
+
+    <form method="post">
+        <button type="submit" name="pin" value="status">Refresh Status</button>
         <input type="hidden" name="action" value="check">
     </form>
 </body>

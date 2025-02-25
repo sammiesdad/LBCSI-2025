@@ -4,11 +4,11 @@ import time
 
 # Define GPIO pin mappings
 GPIO_PINS = {
-    "alarm": LED(24),
-    "strike": LED(26)
+    "alarm": LED(24, initial_value=False),
+    "strike": LED(26, initial_value=False)
 }
 
-DOORCONTACT = Button(25)
+DOORCONTACT = Button(25, pull_up=True)
 
 def control_gpio(pin_name, action, duration=None):
     """Control GPIO pin by name."""
@@ -36,9 +36,12 @@ def check_doorcontact():
     print(f"Door contact is {state}.")
 
 def check_status():
-    """Display the status of all GPIO pins."""
-    statuses = {name: "ON" if pin.is_active else "OFF" for name, pin in GPIO_PINS.items()}
+    """Display the status of all GPIO pins passively without activating outputs."""
+    statuses = {}
+    for name, pin in GPIO_PINS.items():
+        statuses[name] = "ON" if pin.value else "OFF"
     statuses["doorcontact"] = "CLOSED" if DOORCONTACT.is_pressed else "OPEN"
+    
     for name, status in statuses.items():
         print(f"{name}: {status}")
 

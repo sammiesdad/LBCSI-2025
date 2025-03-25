@@ -58,13 +58,9 @@ if ($net_data) {
     for ($i = 2; $i < count($lines); $i++) {
         $line = trim($lines[$i]);
         if (empty($line)) continue;
-        // Split the line into interface and stats
         list($iface, $stats_str) = explode(":", $line, 2);
         $iface = trim($iface);
         $stats = preg_split('/\s+/', trim($stats_str));
-        // According to /proc/net/dev columns:
-        // Receive: bytes, packets, errs, drop, fifo, frame, compressed, multicast
-        // Transmit: bytes, packets, errs, drop, fifo, colls, carrier, compressed
         $network_stats[$iface] = [
             'rx_bytes'   => isset($stats[0]) ? $stats[0] : 0,
             'rx_packets' => isset($stats[1]) ? $stats[1] : 0,
@@ -75,19 +71,19 @@ if ($net_data) {
 }
 $data['network'] = $network_stats;
 
-// --- GPIO Status ---
-$gpio_pins = [2, 3, 4, 17, 27];
-$gpio_status = [];
-foreach ($gpio_pins as $pin) {
-    $gpio_path = "/sys/class/gpio/gpio" . $pin . "/value";
-    if (file_exists($gpio_path)) {
-        $value = trim(file_get_contents($gpio_path));
-        $gpio_status["GPIO " . $pin] = $value;
+// --- GPIO Status using read_gpio.py ---
+// Execute the Python script to get current GPIO values.
+$gpio_output = shell_exec('python3 read_gpio.py');
+if ($gpio_output) {
+    $gpio_values = json_decode($gpio_output, true);
+    if (is_array($gpio_values)) {
+        $data['gpio'] = $gpio_values;
     } else {
-        $gpio_status["GPIO " . $pin] = "Not Exported";
+        $data['gpio'] = "Error: Unable to decode GPIO JSON.";
     }
+} else {
+    $data['gpio'] = "Error: Unable to execute GPIO script.";
 }
-$data['gpio'] = $gpio_status;
 
 echo json_encode($data);
 ?>

@@ -2,14 +2,11 @@ import cv2
 from picamera2 import Picamera2
 import numpy as np 
 import pickle
-import RPi.GPIO as GPIO
+from gpiozero import OutputDevice
 from time import sleep
 
-# GPIO setup
-relay_pin = [26]
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(relay_pin, GPIO.OUT)
-GPIO.output(relay_pin, 0)
+# GPIOZero relay setup (assuming active HIGH relay)
+relay = OutputDevice(26, active_high=True, initial_value=False)
 
 # Load labels
 with open('labels', 'rb') as f:
@@ -17,7 +14,8 @@ with open('labels', 'rb') as f:
 
 # Camera setup with Picamera2
 picam2 = Picamera2()
-picam2.configure(picam2.preview_configuration(main={"format": "BGR888", "size": (640, 480)}))
+config = picam2.create_preview_configuration(main={"format": "BGR888", "size": (640, 480)})
+picam2.configure(config)
 picam2.start()
 
 # Face detection and recognition setup
@@ -46,11 +44,11 @@ try:
                     break
 
             if conf <= 70:
-                GPIO.output(relay_pin, 1)
+                relay.on()
                 cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
                 cv2.putText(frame, name + str(conf), (x, y), font, 2, (0, 0 ,255), 2, cv2.LINE_AA)
             else:
-                GPIO.output(relay_pin, 0)
+                relay.off()
 
         cv2.imshow('frame', frame)
         key = cv2.waitKey(1)
@@ -59,6 +57,5 @@ try:
             break
 finally:
     picam2.stop()
-    GPIO.output(relay_pin, 0)
-    GPIO.cleanup()
+    relay.off()
     cv2.destroyAllWindows()
